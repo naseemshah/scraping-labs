@@ -9,11 +9,12 @@ class BookspiderSpider(scrapy.Spider):
     def parse(self, response):
         books = response.css("article.product_pod")
         for book in books:
-            yield {
-                'name':  book.css("h3 a::text").get(),
-                'price': book.css(".product_price .price_color::text").get(),
-                'url': book.css("h3 a").attrib["href"]
-            }
+            nested_book_page_link = book.css("h3 a ::attr(href)").get()
+            if 'catalogue/' in nested_book_page_link:
+                book_url = 'https://books.toscrape.com/' + nested_book_page_link
+            else:
+                book_url = 'https://books.toscrape.com/catalogue/' + nested_book_page_link
+            yield response.follow(book_url, callback = self.parse_book_page)
 
         next_page = response.css("li.next a ::attr(href)").get()
 
@@ -23,3 +24,6 @@ class BookspiderSpider(scrapy.Spider):
             else:
                 next_page_url = 'https://books.toscrape.com/catalogue/' + next_page
             yield response.follow(next_page_url, callback = self.parse)
+
+    def parse_book_page(self, response):
+        pass
